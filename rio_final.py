@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 st.set_page_config(page_title="Sistema hídrico - análisis docente", layout="wide")
 
@@ -119,6 +121,16 @@ if st.button("Guardar respuesta"):
     
     st.success(f"Modelo detectado: {modelo}")
     st.info(f"Retroalimentación: {comentario}")
+    
+    def guardar_en_sheets(datos):
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    
+    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    client = gspread.authorize(creds)
+    
+    sheet = client.open_by_key("TU_ID_AQUI").sheet1
+    
+    sheet.append_row(datos)
 
 # --------------------------
 # TABLERO DOCENTE
