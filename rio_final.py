@@ -54,7 +54,7 @@ st.subheader("✍️ Explicación del estudiante")
 respuesta = st.text_area("Explica qué está pasando en el sistema")
 
 # --------------------------
-# DETECCIÓN DE MODELO (MEJORADA)
+# DETECCIÓN DE MODELO
 # --------------------------
 def detectar_modelo(texto):
     texto = texto.lower()
@@ -82,7 +82,7 @@ def detectar_modelo(texto):
         return "Muy básico"
 
 # --------------------------
-# RETROALIMENTACIÓN AUTOMÁTICA
+# FEEDBACK
 # --------------------------
 def feedback(modelo):
     if modelo == "Lineal":
@@ -95,93 +95,40 @@ def feedback(modelo):
         return "Desarrolla más tu explicación."
 
 # --------------------------
-# GUARDAR DATOS
+# FUNCIÓN GOOGLE SHEETS
 # --------------------------
-if "datos" not in st.session_state:
-    st.session_state["datos"] = []
-
-if st.button("Guardar respuesta"):
-    
-    modelo = detectar_modelo(respuesta)
-    comentario = feedback(modelo)
-    
-    st.session_state["datos"].append({
-        "fecha": datetime.now(),
-        "estudiante": nombre,
-        "pH": pH,
-        "nutrientes": nutrientes,
-        "lluvia": lluvia,
-        "tratamiento": tratamiento,
-        "oxigeno": oxigeno,
-        "metales": metales,
-        "salud": salud,
-        "modelo": modelo,
-        "respuesta": respuesta
-    })
-    
-    st.success(f"Modelo detectado: {modelo}")
-    st.info(f"Retroalimentación: {comentario}")
-    
-    def guardar_en_sheets(datos):
+def guardar_en_sheets(datos):
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
     client = gspread.authorize(creds)
     
-    sheet = client.open_by_key("TU_ID_AQUI").sheet1
+    sheet = client.open_by_key("1d6LMSQVbhRGa_v0bsA0T2cJ7OXM6AxG0ctDRMoff5Tw").sheet1
     
     sheet.append_row(datos)
 
 # --------------------------
-# TABLERO DOCENTE
+# GUARDAR
 # --------------------------
-st.subheader("👨‍🏫 Tablero docente")
-
-if st.session_state["datos"]:
+if st.button("Guardar respuesta"):
     
-    df = pd.DataFrame(st.session_state["datos"])
+    modelo = detectar_modelo(respuesta)
+    comentario = feedback(modelo)
     
-    st.dataframe(df)
+    # Guardar en Google Sheets
+    guardar_en_sheets([
+        str(datetime.now()),
+        nombre,
+        pH,
+        nutrientes,
+        lluvia,
+        tratamiento,
+        oxigeno,
+        metales,
+        salud,
+        modelo,
+        respuesta
+    ])
     
-    # ----------------------
-    # DISTRIBUCIÓN MODELOS
-    # ----------------------
-    st.subheader("📊 Distribución de modelos")
-    
-    plt.figure()
-    df["modelo"].value_counts().plot(kind="bar")
-    st.pyplot(plt)
-    
-    # ----------------------
-    # EVOLUCIÓN INDIVIDUAL
-    # ----------------------
-    st.subheader("📈 Evolución por estudiante")
-    
-    estudiante_sel = st.selectbox("Seleccionar estudiante", df["estudiante"].unique())
-    
-    df_est = df[df["estudiante"] == estudiante_sel]
-    
-    plt.figure()
-    plt.plot(df_est["salud"], marker='o')
-    plt.title("Evolución del sistema (según decisiones)")
-    st.pyplot(plt)
-    
-    # ----------------------
-    # COMPARACIÓN GLOBAL
-    # ----------------------
-    st.subheader("🔁 Relación nutrientes vs oxígeno")
-    
-    plt.figure()
-    plt.scatter(df["nutrientes"], df["oxigeno"])
-    plt.xlabel("Nutrientes")
-    plt.ylabel("Oxígeno")
-    st.pyplot(plt)
-    
-    # ----------------------
-    # EXPORTAR
-    # ----------------------
-    st.download_button(
-        "📥 Descargar resultados",
-        df.to_csv(index=False),
-        file_name="datos_clase.csv"
-    )
+    st.success(f"Guardado en la nube - Modelo: {modelo}")
+    st.info(f"Retroalimentación: {comentario}")
