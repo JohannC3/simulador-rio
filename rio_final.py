@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Sistema hídrico - análisis docente", layout="wide")
 
@@ -46,6 +46,21 @@ col3, col4, col5 = st.columns(3)
 col3.metric("Oxígeno", round(oxigeno,2))
 col4.metric("Metales", round(metales,2))
 col5.metric("Salud", round(salud,2))
+
+# --------------------------
+# GRÁFICA
+# --------------------------
+st.subheader("📈 Visualización del sistema")
+
+valores = [oxigeno, metales, salud]
+etiquetas = ["Oxígeno", "Metales", "Salud"]
+
+fig, ax = plt.subplots()
+ax.bar(etiquetas, valores)
+ax.set_ylabel("Nivel")
+ax.set_title("Estado del sistema hídrico")
+
+st.pyplot(fig)
 
 # --------------------------
 # RESPUESTA
@@ -95,12 +110,15 @@ def feedback(modelo):
         return "Desarrolla más tu explicación."
 
 # --------------------------
-# FUNCIÓN GOOGLE SHEETS
+# GOOGLE SHEETS
 # --------------------------
 def guardar_en_sheets(datos):
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
     
-    creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
+    creds = Credentials.from_service_account_file("credentials.json", scopes=scope)
     client = gspread.authorize(creds)
     
     sheet = client.open_by_key("1BI5S_nlcL6k1gO30XUjCIrSdyUPm1RG6A-XEfoUtaQA").sheet1
@@ -108,14 +126,19 @@ def guardar_en_sheets(datos):
     sheet.append_row(datos)
 
 # --------------------------
-# GUARDAR
+# CONTROL PARA EVITAR ENVÍOS DUPLICADOS
 # --------------------------
-if st.button("Guardar respuesta"):
+if "guardado" not in st.session_state:
+    st.session_state["guardado"] = False
+
+# --------------------------
+# BOTÓN GUARDAR
+# --------------------------
+if st.button("Guardar respuesta") and not st.session_state["guardado"]:
     
     modelo = detectar_modelo(respuesta)
     comentario = feedback(modelo)
     
-    # Guardar en Google Sheets
     guardar_en_sheets([
         str(datetime.now()),
         nombre,
@@ -130,5 +153,13 @@ if st.button("Guardar respuesta"):
         respuesta
     ])
     
+    st.session_state["guardado"] = True
+    
     st.success(f"Guardado en la nube - Modelo: {modelo}")
     st.info(f"Retroalimentación: {comentario}")
+
+# --------------------------
+# BOTÓN NUEVA RESPUESTA
+# --------------------------
+if st.button("Nueva respuesta"):
+    st.session_state["guardado"] = False
