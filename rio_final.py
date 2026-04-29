@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
+import json
 
 st.set_page_config(page_title="Sistema hídrico - análisis docente", layout="wide")
 
@@ -70,22 +71,22 @@ respuesta = st.text_area("Explica qué está pasando en el sistema")
 # --------------------------
 # DETECCIÓN DE MODELO
 # --------------------------
-def detectar_modelo(texto):
-    texto = texto.lower()
-    
+def detectar_modelo(texto: str) -> str:
+    texto = (texto or "").lower()
+
     conexiones = ["relación", "interacción", "depende", "afecta", "influye"]
     multiples = ["también", "además", "varios", "diferentes"]
-    
+
     score = 0
-    
+
     for palabra in conexiones:
         if palabra in texto:
             score += 2
-            
+
     for palabra in multiples:
         if palabra in texto:
             score += 1
-    
+
     if score >= 4:
         return "Sistémico"
     elif score >= 2:
@@ -98,7 +99,7 @@ def detectar_modelo(texto):
 # --------------------------
 # FEEDBACK
 # --------------------------
-def feedback(modelo):
+def feedback(modelo: str) -> str:
     if modelo == "Lineal":
         return "Intenta incluir más de una relación entre variables."
     elif modelo == "Multicausal":
@@ -109,17 +110,17 @@ def feedback(modelo):
         return "Desarrolla más tu explicación."
 
 # --------------------------
-# GOOGLE SHEETS (VERSIÓN FINAL)
+# GOOGLE SHEETS (SECRETS + JSON)
 # --------------------------
-def guardar_en_sheets(datos):
+def guardar_en_sheets(datos) -> bool:
     try:
         scope = [
             "https://www.googleapis.com/auth/spreadsheets",
             "https://www.googleapis.com/auth/drive"
         ]
 
-        # Leer directamente desde Secrets
-        creds_dict = st.secrets["gcp"]["credentials"]
+        # credentials está guardado como string en Secrets → convertir a dict
+        creds_dict = json.loads(st.secrets["gcp"]["credentials"])
 
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
         client = gspread.authorize(creds)
@@ -143,10 +144,9 @@ if "guardado" not in st.session_state:
 # BOTÓN GUARDAR
 # --------------------------
 if st.button("Guardar respuesta") and not st.session_state["guardado"]:
-    
+
     if not nombre or not respuesta.strip():
         st.warning("⚠️ Debes ingresar tu nombre y una explicación.")
-    
     else:
         modelo = detectar_modelo(respuesta)
         comentario = feedback(modelo)
