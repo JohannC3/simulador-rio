@@ -3,7 +3,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import gspread
 from google.oauth2.service_account import Credentials
-import json
 
 st.set_page_config(page_title="Sistema hídrico - análisis docente", layout="wide")
 
@@ -110,7 +109,7 @@ def feedback(modelo: str) -> str:
         return "Desarrolla más tu explicación."
 
 # --------------------------
-# GOOGLE SHEETS (SECRETS + JSON)
+# GOOGLE SHEETS (VERSIÓN FINAL)
 # --------------------------
 def guardar_en_sheets(datos) -> bool:
     try:
@@ -119,7 +118,7 @@ def guardar_en_sheets(datos) -> bool:
             "https://www.googleapis.com/auth/drive"
         ]
 
-        # 🔥 YA NO USAMOS json.loads
+        # 🔥 CORRECTO: usar secrets directamente
         creds_dict = st.secrets["gcp"]
 
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
