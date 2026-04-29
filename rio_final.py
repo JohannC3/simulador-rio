@@ -119,8 +119,8 @@ def guardar_en_sheets(datos) -> bool:
             "https://www.googleapis.com/auth/drive"
         ]
 
-        # credentials está guardado como string en Secrets → convertir a dict
-        creds_dict = json.loads(st.secrets["gcp"]["credentials"])
+        # 🔥 YA NO USAMOS json.loads
+        creds_dict = st.secrets["gcp"]
 
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
         client = gspread.authorize(creds)
