@@ -6,7 +6,7 @@ from google.oauth2.service_account import Credentials
 
 st.set_page_config(page_title="Sistema hídrico - análisis docente", layout="wide")
 
-st.title("🌊 Simulación y análisis de modelos explicativos")
+st.title("🌊 Que esta pasando en el rio")
 
 # --------------------------
 # IDENTIFICACIÓN ESTUDIANTE
