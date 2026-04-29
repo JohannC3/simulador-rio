@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 import gspread
@@ -43,9 +42,9 @@ salud = 10 - abs(7 - pH)*1.5 - nutrientes*0.2 - metales*0.2
 st.subheader("📊 Estado del sistema")
 
 col3, col4, col5 = st.columns(3)
-col3.metric("Oxígeno", round(oxigeno,2))
-col4.metric("Metales", round(metales,2))
-col5.metric("Salud", round(salud,2))
+col3.metric("Oxígeno", round(oxigeno, 2))
+col4.metric("Metales", round(metales, 2))
+col5.metric("Salud", round(salud, 2))
 
 # --------------------------
 # GRÁFICA
@@ -110,23 +109,32 @@ def feedback(modelo):
         return "Desarrolla más tu explicación."
 
 # --------------------------
-# GOOGLE SHEETS
+# GOOGLE SHEETS (VERSIÓN FINAL)
 # --------------------------
 def guardar_en_sheets(datos):
-    scope = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-    
-    creds = Credentials.from_service_account_file("credentials.json", scopes=scope)
-    client = gspread.authorize(creds)
-    
-    sheet = client.open_by_key("1BI5S_nlcL6k1gO30XUjCIrSdyUPm1RG6A-XEfoUtaQA").sheet1
-    
-    sheet.append_row(datos)
+    try:
+        scope = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
+
+        # Leer directamente desde Secrets
+        creds_dict = st.secrets["gcp"]["credentials"]
+
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+        client = gspread.authorize(creds)
+
+        sheet = client.open_by_key("1BI5S_nlcL6k1gO30XUjCIrSdyUPm1RG6A-XEfoUtaQA").sheet1
+        sheet.append_row(datos)
+
+        return True
+
+    except Exception as e:
+        st.error(f"Error al guardar en Sheets: {e}")
+        return False
 
 # --------------------------
-# CONTROL PARA EVITAR ENVÍOS DUPLICADOS
+# CONTROL PARA EVITAR DUPLICADOS
 # --------------------------
 if "guardado" not in st.session_state:
     st.session_state["guardado"] = False
@@ -136,27 +144,31 @@ if "guardado" not in st.session_state:
 # --------------------------
 if st.button("Guardar respuesta") and not st.session_state["guardado"]:
     
-    modelo = detectar_modelo(respuesta)
-    comentario = feedback(modelo)
+    if not nombre or not respuesta.strip():
+        st.warning("⚠️ Debes ingresar tu nombre y una explicación.")
     
-    guardar_en_sheets([
-        str(datetime.now()),
-        nombre,
-        pH,
-        nutrientes,
-        lluvia,
-        tratamiento,
-        oxigeno,
-        metales,
-        salud,
-        modelo,
-        respuesta
-    ])
-    
-    st.session_state["guardado"] = True
-    
-    st.success(f"Guardado en la nube - Modelo: {modelo}")
-    st.info(f"Retroalimentación: {comentario}")
+    else:
+        modelo = detectar_modelo(respuesta)
+        comentario = feedback(modelo)
+
+        exito = guardar_en_sheets([
+            str(datetime.now()),
+            nombre,
+            pH,
+            nutrientes,
+            lluvia,
+            tratamiento,
+            oxigeno,
+            metales,
+            salud,
+            modelo,
+            respuesta
+        ])
+
+        if exito:
+            st.session_state["guardado"] = True
+            st.success(f"✅ Guardado en la nube - Modelo: {modelo}")
+            st.info(f"💡 Retroalimentación: {comentario}")
 
 # --------------------------
 # BOTÓN NUEVA RESPUESTA
