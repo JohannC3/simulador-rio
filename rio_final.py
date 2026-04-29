@@ -118,32 +118,13 @@ def guardar_en_sheets(datos) -> bool:
             "https://www.googleapis.com/auth/drive"
         ]
 
+        # 🔥 CORRECTO: usar secrets directamente
         creds_dict = st.secrets["gcp"]
+
         creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
         client = gspread.authorize(creds)
 
         sheet = client.open_by_key("1BI5S_nlcL6k1gO30XUjCIrSdyUPm1RG6A-XEfoUtaQA").sheet1
-
-        # 🔥 ENCABEZADOS
-        headers = [
-            "Fecha",
-            "Nombre",
-            "pH",
-            "Nutrientes",
-            "Lluvia",
-            "Tratamiento",
-            "Oxígeno",
-            "Metales",
-            "Salud",
-            "Modelo",
-            "Respuesta"
-        ]
-
-        # 🔥 SOLO CREA ENCABEZADOS SI LA HOJA ESTÁ VACÍA
-        if sheet.row_count == 0 or not sheet.get_all_values():
-            sheet.append_row(headers)
-
-        # 🔥 AGREGA LOS DATOS
         sheet.append_row(datos)
 
         return True
@@ -151,6 +132,12 @@ def guardar_en_sheets(datos) -> bool:
     except Exception as e:
         st.error(f"Error al guardar en Sheets: {e}")
         return False
+
+# --------------------------
+# CONTROL PARA EVITAR DUPLICADOS
+# --------------------------
+if "guardado" not in st.session_state:
+    st.session_state["guardado"] = False
 
 # --------------------------
 # BOTÓN GUARDAR
